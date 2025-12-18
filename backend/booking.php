@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+//Calendar data
+
+$year  = 2026;
+$month = 1;
+
+//Guest data
 
 $guestName    = trim($_POST['guestId']);
 $transferCode = trim($_POST['transferCode']);
@@ -19,7 +25,7 @@ if (!preg_match('/^[a-zA-Z0-9 _-]{1,50}$/', $guestName)) {
 
 // Database
 
-$database = new PDO('sqlite:database/database.db');
+$database = require __DIR__ . '/database.php';
 $database->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 
@@ -145,6 +151,29 @@ if ($guest) {
         ':visits' => $initialVisits
     ]);
     $guestId = (int)$database->lastInsertId();
+}
+
+
+//Check date overlap
+
+$statement = $database->prepare(
+    'SELECT COUNT(*) FROM bookings
+     WHERE room_id = :room_id
+       AND arrival_date < :departure
+       AND departure_date > :arrival'
+);
+
+$statement->execute([
+    ':room_id'  => $roomId,
+    ':arrival'  => $arrival,
+    ':departure' => $departure,
+]);
+
+$conflicts = (int)$statement->fetchColumn();
+
+if ($conflicts > 0) {
+    header('Location: /index.php?status=date_unavailable');
+    exit;
 }
 
 
