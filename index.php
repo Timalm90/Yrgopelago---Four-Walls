@@ -25,9 +25,11 @@ require __DIR__ . '/loadData.php';
 
     <section class="hotelWrapper">
 
+
         <div id="hotel"></div>
 
-        <form action="/backend/booking.php" method="post" class="booking">
+
+        <form action="backend/booking.php" method="post" class="booking">
 
             <!-- ROOMS -->
             <div class="room">

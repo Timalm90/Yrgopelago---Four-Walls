@@ -29,7 +29,7 @@ $roomId       = isset($_POST['room']) ? (int)$_POST['room'] : null;
 $features     = $_POST['features'] ?? [];
 
 if (!$guestName || !$transferCode || !$arrival || !$departure || !$roomId) {
-    header('Location: /index.php?status=error');
+    header('Location: ../index.php?status=error');
     exit;
 }
 
@@ -40,7 +40,7 @@ $start = new DateTime($arrival);
 $end   = new DateTime($departure);
 
 if ($end <= $start) {
-    header('Location: /index.php?status=departure_date_error');
+    header('Location: ../index.php?status=departure_date_error');
     exit;
 }
 
@@ -65,7 +65,7 @@ $stmt->execute([
 ]);
 
 if ((int)$stmt->fetchColumn() > 0) {
-    header('Location: /index.php?status=room_unavailable');
+    header('Location: ../index.php?status=room_unavailable');
     exit;
 }
 
@@ -146,7 +146,7 @@ if ($guest) {
 $bank = new CentralBankService();
 
 if (!$bank->validateTransfer($transferCode, $bankAmount)) {
-    header('Location: /index.php?status=transfer_invalid');
+    header('Location: ../index.php?status=transfer_invalid');
     exit;
 }
 
@@ -203,5 +203,5 @@ $_SESSION['receipt'] = [
     'total'    => round($finalPrice, 2),
 ];
 
-header('Location: /index.php?status=success');
+header('Location: ../index.php?status=success');
 exit;

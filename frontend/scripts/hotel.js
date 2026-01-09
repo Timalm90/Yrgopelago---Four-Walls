@@ -1,10 +1,11 @@
 // ==================================================
-// SVG
+// SVG 
 // ==================================================
 function getSVG() {
     return document.querySelector('#hotel svg');
 }
 
+// SVG GROUP MAPPINGS
 const ROOM_GROUPS = {
     economy: 'Budget',
     standard: 'Standard',
@@ -18,46 +19,41 @@ const EXTRA_GROUPS = {
     butler: 'Butler'
 };
 
-// ----------------------
+// ==================================================
 // Hide all rooms
-// ----------------------
+// ==================================================
 function hideRoomSVG() {
     const svg = getSVG();
     if (!svg) return;
+
     Object.values(ROOM_GROUPS).forEach(id => {
         const g = svg.getElementById(id);
         if (g) g.style.display = 'none';
     });
 }
 
-// ----------------------
-// Hide all extras
-// ----------------------
 function hideExtraSVG() {
     const svg = getSVG();
     if (!svg) return;
+
     Object.values(EXTRA_GROUPS).forEach(prefix => {
-        svg.querySelectorAll(`[id^="${prefix}"]`).forEach(g => g.style.display = 'none');
+        svg.querySelectorAll(`[id^="${prefix}"]`)
+            .forEach(g => g.style.display = 'none');
     });
 }
 
-// ----------------------
-// Show selected room
-// ----------------------
 function showRoomSVG(tier) {
     hideRoomSVG();
     const svg = getSVG();
     if (!svg) return;
+
     const id = ROOM_GROUPS[tier];
-    if (id) {
-        const g = svg.getElementById(id);
-        if (g) g.style.display = 'block';
-    }
+    if (!id) return;
+
+    const g = svg.getElementById(id);
+    if (g) g.style.display = 'block';
 }
 
-// ----------------------
-// Show selected extras
-// ----------------------
 function showExtraSVG(selectedExtras) {
     hideExtraSVG();
     const svg = getSVG();
@@ -66,20 +62,22 @@ function showExtraSVG(selectedExtras) {
     selectedExtras.forEach(name => {
         const prefix = EXTRA_GROUPS[name];
         if (!prefix) return;
-        svg.querySelectorAll(`[id^="${prefix}"]`).forEach(g => g.style.display = 'block');
+
+        svg.querySelectorAll(`[id^="${prefix}"]`)
+            .forEach(g => g.style.display = 'block');
     });
 }
 
 // ==================================================
 // LOAD SVG
 // ==================================================
-fetch('/frontend/graphics/FourWalls.svg')
+fetch('frontend/graphics/FourWalls.svg')
     .then(r => r.text())
     .then(svg => {
         document.getElementById('hotel').innerHTML = svg;
         hideRoomSVG();
         hideExtraSVG();
-        restoreState(); // ✅ IMPORTANT
+        restoreState();
     });
 
 // ==================================================
@@ -92,7 +90,9 @@ function nights() {
     const a = document.querySelector('[name="arrival"]').value;
     const d = document.querySelector('[name="departure"]').value;
     if (!a || !d) return 1;
-    return Math.max(1, (new Date(d) - new Date(a)) / 86400000);
+
+    const diff = (new Date(d) - new Date(a)) / 86400000;
+    return Math.max(1, diff);
 }
 
 function updatePrice() {
@@ -111,10 +111,11 @@ function updatePrice() {
 // ==================================================
 // ROOM SELECTION
 // ==================================================
-document.querySelectorAll('[name="room"]').forEach(r => {
-    r.addEventListener('change', () => {
-        roomPrice = parseFloat(r.dataset.roomPrice);
-        showRoomSVG(r.dataset.roomTier);
+document.querySelectorAll('[name="room"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        roomPrice = parseFloat(radio.dataset.roomPrice) || 0;
+
+        showRoomSVG(radio.dataset.roomTier);
 
         const selectedExtras = Array.from(
             document.querySelectorAll('[name="features[]"]:checked')
@@ -123,9 +124,9 @@ document.querySelectorAll('[name="room"]').forEach(r => {
         showExtraSVG(selectedExtras);
 
         document.getElementById('roomDescription').textContent =
-            ROOM_DESCRIPTIONS[r.dataset.roomTier] ?? '';
+            ROOM_DESCRIPTIONS[radio.dataset.roomTier] ?? '';
 
-        updateCalendar(r.value);
+        updateCalendar(radio.value);
         updatePrice();
     });
 });
@@ -133,8 +134,8 @@ document.querySelectorAll('[name="room"]').forEach(r => {
 // ==================================================
 // FEATURES
 // ==================================================
-document.querySelectorAll('[name="features[]"]').forEach(f => {
-    f.addEventListener('change', () => {
+document.querySelectorAll('[name="features[]"]').forEach(box => {
+    box.addEventListener('change', () => {
         const selectedExtras = Array.from(
             document.querySelectorAll('[name="features[]"]:checked')
         ).map(f => f.dataset.featureName);
@@ -145,12 +146,14 @@ document.querySelectorAll('[name="features[]"]').forEach(f => {
 });
 
 // ==================================================
-// AUTO DEPARTURE (Set to 1 Night by default)
+// AUTO DEPARTURE (DEFAULT 1 NIGHT)
 // ==================================================
 document.querySelector('[name="arrival"]').addEventListener('change', e => {
     const d = new Date(e.target.value);
     d.setDate(d.getDate() + 1);
-    document.querySelector('[name="departure"]').value = d.toISOString().slice(0, 10);
+    document.querySelector('[name="departure"]').value =
+        d.toISOString().slice(0, 10);
+
     updatePrice();
 });
 
@@ -182,14 +185,17 @@ function renderCalendar(blockedDates = []) {
         el.className = 'calendar-day';
         el.textContent = day;
 
-        if (blockedDates.includes(dateStr)) el.classList.add('unavailable');
+        if (blockedDates.includes(dateStr)) {
+            el.classList.add('unavailable');
+        }
+
         calendarGrid.appendChild(el);
     }
 }
 
 async function updateCalendar(roomId) {
     try {
-        const r = await fetch(`/backend/availability.php?room_id=${roomId}`);
+        const r = await fetch(`backend/availability.php?room_id=${roomId}`);
         renderCalendar(await r.json());
     } catch {
         renderCalendar([]);
@@ -199,12 +205,13 @@ async function updateCalendar(roomId) {
 renderCalendar([]);
 
 // ==================================================
-// RESTORE SESSION STATE 
+// RESTORE SESSION STATE
 // ==================================================
 function restoreState() {
     const room = document.querySelector('[name="room"]:checked');
     if (room) {
-        roomPrice = parseFloat(room.dataset.roomPrice);
+        roomPrice = parseFloat(room.dataset.roomPrice) || 0;
+
         showRoomSVG(room.dataset.roomTier);
         updateCalendar(room.value);
 
